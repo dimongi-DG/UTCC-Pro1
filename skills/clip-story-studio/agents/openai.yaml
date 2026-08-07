@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clip Story Studio"
+  short_description: "Maintain Clip Story Studio media workflows"
+  default_prompt: "Use $clip-story-studio to update, test, or troubleshoot the reference-based story production app."
