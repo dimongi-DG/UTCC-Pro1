@@ -93,5 +93,16 @@ function registerIpc() {
     return exporter.exportMp4(root(), payload.project, chosen.filePath, { ...payload.options, ffmpegPath: settings.ffmpegPath }, progress => event.sender.send('export:progress', { progress }));
   });
   handle('export:cancel', () => ({ cancelled: exporter.cancelExport() }));
+  handle('export:storyboard-pdf', async payload => {
+    assertProjectPayload(payload?.project);
+    const chosen = await dialog.showSaveDialog({ title: 'Export Storyboard PDF', defaultPath: `${payload.project.title}-storyboard.pdf`, filters: [{ name: 'PDF', extensions: ['pdf'] }] });
+    if (chosen.canceled) return null;
+    const result = await exporter.exportStoryboardPdf(root(), payload.project, chosen.filePath);
+    return { ...result, outputPath: chosen.filePath };
+  });
+  handle('export:zip', payload => {
+    assertProjectPayload(payload?.project);
+    return exporter.exportZipPackage(root(), payload.project);
+  });
 }
 module.exports = { registerIpc, getActiveProjectRoot: projectStore.getActiveRoot };

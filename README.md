@@ -217,7 +217,7 @@ npm.cmd test
 node_modules\.bin\electron.cmd . --smoke-test
 ```
 
-ชุดทดสอบปัจจุบัน 47 รายการ ครอบคลุม schema/normalization, Prompt Templates และ variable provenance, rendered Character/Story System + User exports, text-free Image/Video prompts, provider request shape, multipart Character references, image-to-video guard, Sora standard/strict safety framing และ moderation classification, silent generated-video post-processing, segment ≤ 8 วินาที, Character style lock, settings portability, atomic save, path traversal, packaged FFmpeg resolution, Thai female TTS/Character instructions, TTS force-regenerate/cache bypass, External Storyboard Prompt Package และ export
+ชุดทดสอบปัจจุบันนี้ 56 รายการ ครอบคลุม schema/normalization, Prompt Templates และ variable provenance, rendered Character/Story System + User exports, text-free Image/Video prompts, provider request shape, multipart Character references, image-to-video guard, Sora standard/strict safety framing และ moderation classification, silent generated-video post-processing, segment ≤ 8 วินาที, Character style lock, settings portability, atomic save, path traversal, packaged FFmpeg resolution, Thai female TTS/Character instructions, TTS force-regenerate/cache bypass, External Storyboard Prompt Package และ export, ZIP package export, และ Storyboard PDF export
 
 Smoke test เปิด Renderer จริงและตรวจ Settings, Prompt Template Registry, Brief sync, Character-first UI, Story/Storyboard status, media routing และ video `contain` โดยผลสำเร็จจะแสดง `SMOKE_OK`
 
@@ -256,6 +256,6 @@ npm.cmd run build:mac
 - Character consistency ดีขึ้นจาก reference image แต่ผลลัพธ์ยังขึ้นกับจำนวนตัวละคร คุณภาพภาพอ้างอิง และข้อจำกัดของ image model; ควรตรวจทุก Shot ก่อนสร้างวิดีโอ
 - Mock TTS ใช้ทดสอบ file workflow/cache ไม่ใช่เสียงพูด production
 - Timeline เป็น editor พื้นฐาน ยังไม่มี waveform และ drag trim
-- MOV บาง codec อาจ preview ใน Chromium ไม่ได้ แม้ FFmpeg อ่านไฟล์ได้
-- Export package ยังเป็นโฟลเดอร์ portable; ยังไม่มี Storyboard PDF และ ZIP อัตโนมัติ
+- Storyboard PDF รองรับการแสดงข้อความและ Shot labels; รูปภาพ Storyboard จะถูกรวมเข้าไปเมื่อ Electron nativeImage พร้อมใช้งาน
+- Export package รองรับการส่งออกเป็นโฟลเดอร์ portable หรือไฟล์ ZIP แล้ว
 - การลบ Project ในหน้า Projects เอาออกจาก recent list ไม่ได้ลบโฟลเดอร์จริง

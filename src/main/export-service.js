@@ -6,6 +6,25 @@ const { flattenShots, flattenSegments, flattenDialogue } = require('../shared/sc
 const { csvCell } = require('../shared/utils');
 const { normalizePromptTemplates, renderPromptTemplate, storyPromptContext, characterPromptContext } = require('../shared/prompt-templates');
 const { assertRelativePath, safeNumber } = require('./validators');
+const { ZipWriter } = require('./zip-writer');
+const { buildStoryboardPdf } = require('./pdf-writer');
+
+let electron;
+try {
+  electron = require('electron');
+} catch { /* empty */ }
+
+function loadNativeImage(fullPath) {
+  if (electron && electron.nativeImage && fs.existsSync(fullPath)) {
+    const image = electron.nativeImage.fromFile(fullPath);
+    if (!image.isEmpty()) {
+      const rgba = image.getBitmap();
+      const { width, height } = image.getSize();
+      return { rgba, width, height };
+    }
+  }
+  return null;
+}
 
 let running = null;
 function assetExists(root, relative) { return relative && fs.existsSync(path.join(root, ...relative.split('/'))); }
@@ -488,5 +507,49 @@ async function exportMp4(root, project, outputPath, options, onProgress) {
     child.on('close', code => { running = null; if (code === 0) { onProgress(100); resolve({ outputPath }); } else reject(new Error(`FFmpeg export failed (${code}): ${stderr.slice(-600)}`)); });
   });
 }
+async function exportStoryboardPdf(root, project, outputPath) {
+  const imageLoader = (relativePath) => {
+    assertRelativePath(relativePath);
+    return loadNativeImage(path.join(root, ...String(relativePath).split('/')));
+  };
+  const pdf = buildStoryboardPdf(project, { includeImages: true, imageLoader });
+  await fsp.writeFile(outputPath, pdf);
+  return { outputPath, pageCount: Math.ceil(flattenShots(project).length / 3) };
+}
+
+async function exportZipPackage(root, project) {
+  const target = path.join(root, 'exports', `package-${Date.now()}.zip`);
+  const zip = new ZipWriter();
+
+  const collect = async (dir) => {
+    const entries = await fsp.readdir(path.join(root, dir), { withFileTypes: true });
+    for (const entry of entries) {
+      const rel = path.posix.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await collect(rel);
+      } else {
+        const data = await fsp.readFile(path.join(root, rel));
+        zip.addBuffer(rel.replace(/^exports\//, ''), data);
+      }
+    }
+  };
+
+  const exportsDir = path.join(root, 'exports');
+
+  await exportPackage(root, project);
+
+  const exportDirs = (await fsp.readdir(exportsDir, { withFileTypes: true })).filter(d => d.isDirectory() && d.name.startsWith('package-'));
+  for (const dir of exportDirs) {
+    const dirRel = path.posix.join('exports', dir.name);
+    await collect(dirRel);
+  }
+
+  zip.addBuffer('project.json', await fsp.readFile(path.join(root, 'project.json')));
+
+  const buffer = zip.build();
+  await fsp.writeFile(target, buffer);
+  return { outputPath: target };
+}
+
 function cancelExport() { if (running) { running.kill(); running = null; return true; } return false; }
-module.exports = { checklist, exportPackage, exportExternalCharacterPrompt, exportExternalStoryboardPrompt, exportMp4, cancelExport, testFfmpeg, resolveAsarUnpackedPath, resolveFfmpeg, silentVideoArgs, stripAudioTrack, stripProjectVideoAudio, storyMarkdown, storyboardMarkdown, videoPromptsMarkdown, storyboardReferenceManifest, externalStoryboardData, externalStoryboardPromptMarkdown, fullStoryMasterPromptMarkdown, renderedGenerationPrompts, systemUserPromptMarkdown };
+module.exports = { checklist, exportPackage, exportExternalCharacterPrompt, exportExternalStoryboardPrompt, exportMp4, cancelExport, testFfmpeg, resolveAsarUnpackedPath, resolveFfmpeg, silentVideoArgs, stripAudioTrack, stripProjectVideoAudio, storyMarkdown, storyboardMarkdown, videoPromptsMarkdown, storyboardReferenceManifest, externalStoryboardData, externalStoryboardPromptMarkdown, fullStoryMasterPromptMarkdown, renderedGenerationPrompts, systemUserPromptMarkdown, exportStoryboardPdf, exportZipPackage };

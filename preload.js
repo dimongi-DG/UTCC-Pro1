@@ -48,6 +48,8 @@ contextBridge.exposeInMainWorld('studio', Object.freeze({
     package: invoke('export:package'),
     characterPrompt: invoke('export:character-prompt'),
     storyboardPrompt: invoke('export:storyboard-prompt'),
+    storyboardPdf: invoke('export:storyboard-pdf'),
+    zip: invoke('export:zip'),
     mp4: invoke('export:mp4'),
     cancel: invoke('export:cancel')
   }),
