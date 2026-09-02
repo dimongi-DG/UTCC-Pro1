@@ -524,6 +524,10 @@ connect-src 'none';
 - รักษา key message ของผู้ใช้
 - ห้ามเปลี่ยน locked scene/shot
 - duration รวมควรใกล้ target duration
+- **กฎการแสดงอารมณ์ทางภาพ (Show, Don't Tell)**: ในการเขียน `action` และ `imagePrompt` ให้หลีกเลี่ยงการอธิบายอารมณ์ตรงๆ (เช่น 'she is sad') แต่ให้ใช้หลักการ Visual Storytelling เล่าอารมณ์ผ่านท่าทางและสภาพแวดล้อมแทน (เช่น 'she looks down, fidgeting with her thumbs under cold blue lighting')
+- **ระบุคำศัพท์มุมกล้อง (Cinematography Keywords)**: ให้ระบุ Camera Movement, Angle และ Lens อย่างชัดเจน เช่น 'Slow push-in, 35mm lens, shallow depth of field, over-the-shoulder (OTS)' เพื่อให้ video segment มีความเป็นภาพยนตร์
+- **จัดการ Pacing (จังหวะการตัดต่อ)**: แบ่ง Segment ให้สอดคล้องกับอารมณ์ฉาก หากเป็น Action ให้แบ่ง Segment สั้นๆ (1-3 วินาที) หากเป็น Drama ให้อารมณ์ซึ้ง ใช้ Segment ยาวขึ้น (5-8 วินาที)
+- **สร้างความต่อเนื่องให้ Video Prompts (Temporal Continuity)**: สำหรับ Video Prompt ที่แตกแขนงจาก Shot เดียวกัน ให้เขียน prompt ของ Segment 2 ให้เชื่อมกับการกระทำในท้าย Segment 1 เสมอ เพื่อป้องกันภาพกระโดด (Jump cut)
 - ทุก storyboard shot ต้องมี `plannedDurationSec` มากกว่า 0 และมี `videoSegments` อย่างน้อยหนึ่งรายการเมื่อเข้าสู่ขั้น Video Prompt
 - ทุก `videoSegment.durationSec` ต้องมากกว่า 0 และไม่เกิน 8 วินาที แต่จำนวน segments และความยาวรวมของ final clip ไม่จำกัด
 - dialogue ต้องเหมาะกับเวลาและภาษา
