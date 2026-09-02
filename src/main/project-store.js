@@ -1,7 +1,19 @@
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
-const { app } = require('electron');
+let app;
+try {
+  const electron = require('electron');
+  if (typeof electron === 'object' && electron !== null && electron.app) {
+    app = electron.app;
+  }
+} catch { /* empty */ }
+
+if (!app) {
+  const os = require('node:os');
+  const path = require('node:path');
+  app = { getPath: () => path.join(os.tmpdir(), 'clip-story-studio-test') };
+}
 const { PROJECT_DIRS } = require('../shared/constants');
 const { createEmptyProject, normalizeProject, validateProject } = require('../shared/schema');
 const { sanitizeFilename } = require('./validators');

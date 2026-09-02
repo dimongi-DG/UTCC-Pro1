@@ -1,6 +1,26 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { app, safeStorage } = require('electron');
+let app, safeStorage;
+try {
+  const electron = require('electron');
+  if (typeof electron === 'object' && electron !== null && electron.app) {
+    app = electron.app;
+    safeStorage = electron.safeStorage;
+  }
+} catch { /* empty */ }
+
+if (!app) {
+  const os = require('node:os');
+  const path = require('node:path');
+  app = { getPath: () => path.join(os.tmpdir(), 'clip-story-studio-test'), getVersion: () => '2.0.6' };
+}
+if (!safeStorage) {
+  safeStorage = {
+    isEncryptionAvailable: () => false,
+    encryptString: (str) => Buffer.from(str),
+    decryptString: (buf) => buf.toString()
+  };
+}
 const { DEFAULT_SETTINGS } = require('../shared/constants');
 const { writeAtomic } = require('./project-store');
 const { safeVendorId, normalizeVendors, validateVendors, validateEndpoint } = require('../shared/vendors');

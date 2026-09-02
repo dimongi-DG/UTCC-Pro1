@@ -1,6 +1,18 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { app } = require('electron');
+let app;
+try {
+  const electron = require('electron');
+  if (typeof electron === 'object' && electron !== null && electron.app) {
+    app = electron.app;
+  }
+} catch { /* empty */ }
+
+if (!app) {
+  const os = require('node:os');
+  const path = require('node:path');
+  app = { getPath: () => path.join(os.tmpdir(), 'clip-story-studio-test') };
+}
 
 function redact(value) {
   return String(value || '').replace(/(api[_ -]?key|authorization|bearer)\s*[:=]?\s*[^\s,}]+/gi, '$1=[REDACTED]');
