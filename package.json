@@ -1,6 +1,6 @@
 {
   "name": "clip-story-studio",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "Offline-first desktop workflow for planning and producing short-form video stories",
   "main": "main.js",
   "type": "commonjs",

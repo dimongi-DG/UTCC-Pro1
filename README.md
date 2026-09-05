@@ -1,4 +1,4 @@
-# Clip Story Studio 2.0.6
+# Clip Story Studio 2.0.7
 
 แอปเดสก์ท็อปแบบ offline-first สำหรับวางแผนและผลิตวิดีโอสั้น ตั้งแต่ Creative Brief, Character Bible, Story/Scene/Shot, Storyboard, Video Segments, Voice/TTS, Timeline จนถึง Export MP4
 
@@ -9,6 +9,8 @@
 เวอร์ชัน 2.0.2 เพิ่ม Sora safety framing ที่ request layer, ตรวจ moderation error จาก response body, ปุ่ม **ปรับ Prompt สำหรับ Sora** และทำให้ batch generation ข้ามคลิปที่ถูก moderation เพื่อสร้างคลิปอื่นต่อ
 
 เวอร์ชัน 2.0.6 แก้การเปลี่ยน Voice แล้วยังได้ยินเสียงเดิม โดยซ่อนไฟล์เสียงเก่าทันทีเมื่อค่าที่มีผลต่อเสียงเปลี่ยน บังคับ Regenerate ให้ข้าม application cache และแสดง `requested voice → provider voice` ของไฟล์ล่าสุด พร้อมเพิ่มการ Export เรื่องราวจากขั้นตอนที่ 4 เป็น Prompt Package สำหรับสร้าง Storyboard ด้วย AI ภายนอก
+
+เวอร์ชัน 2.0.7 เขียน Prompt Template Registry ใหม่ทั้ง 4 ชุด (Story, Character, Storyboard, Video) ให้ละเอียดและตรงกับ JSON ที่แอป parse จริงมากขึ้น เพิ่มตัวแปรใหม่ (`{{targetDurationSec}}`, `{{language}}`, `{{platform}}`, `{{aspectRatio}}`, `{{storyboardStyle}}`, `{{characterCount}}`, `{{shotLabel}}`, `{{shotDurationSec}}`, `{{segmentPlanJson}}`) พร้อมอัปเกรด Template เดิมที่ยังไม่ถูกแก้เองให้เป็นรุ่นล่าสุดโดยอัตโนมัติ และปรับขนาดตัวอักษรของ input/textarea ให้ compact ตามที่ตั้งใจไว้
 
 ## ความสามารถหลัก
 
@@ -40,17 +42,21 @@
 
 เปิด **Settings → Prompt Template Registry** เพื่อดูและแก้ไข Template ต่อไปนี้:
 
-| Template | ใช้กับ | ตัวอย่างตัวแปร |
+| Template | ใช้กับ | ตัวแปรที่ใช้ได้ |
 |---|---|---|
-| Story generation | Story, Scene, Shot, Dialogue | `{{briefJson}}`, `{{characterBibleJson}}`, `{{keyMessage}}` |
-| Character design | สร้าง Character Bible | `{{contextJson}}`, `{{characterStyle}}` |
-| Storyboard prompt | Image prompt ราย Shot | `{{contextJson}}`, `{{characterReferencesJson}}`, `{{storyboardStyle}}` |
-| Image-to-video segment prompt | Motion prompt ต่อ Segment | `{{contextJson}}`, `{{storyboardImageJson}}`, `{{segmentCount}}` |
+| Story generation | Story, Scene, Shot, Dialogue (พร้อม `startSec`/`estimatedDurationSec`) | `{{briefJson}}`, `{{characterBibleJson}}`, `{{keyMessage}}`, `{{projectTitle}}`, `{{targetDurationSec}}`, `{{language}}`, `{{platform}}`, `{{aspectRatio}}`, `{{storyboardStyle}}` |
+| Character design | สร้าง Character Bible | `{{contextJson}}`, `{{characterStyle}}`, `{{projectTitle}}`, `{{language}}` |
+| Storyboard prompt | Image prompt ราย Shot | `{{contextJson}}`, `{{characterReferencesJson}}`, `{{storyboardStyle}}`, `{{aspectRatio}}`, `{{projectTitle}}`, `{{characterCount}}`, `{{shotLabel}}` |
+| Image-to-video segment prompt | Motion prompt ต่อ Segment | `{{contextJson}}`, `{{storyboardImageJson}}`, `{{segmentCount}}`, `{{aspectRatio}}`, `{{projectTitle}}`, `{{shotDurationSec}}`, `{{shotLabel}}`, `{{characterCount}}`, `{{segmentPlanJson}}` |
 
 แต่ละ Template แยกเป็น:
 
-- **System prompt** — บทบาท กฎ และข้อจำกัดระดับสูง
-- **User prompt** — งานที่ต้องทำ โครงสร้าง JSON และตำแหน่งข้อมูลจากตัวแปร
+- **System prompt** — บทบาท ลำดับความสำคัญของกฎ (priority order) ข้อบังคับด้านภาษา/ความปลอดภัย และรูปแบบ output
+- **User prompt** — งานที่ต้องทำ ตัวแปรสำคัญ โครงสร้าง JSON ที่แอป parse ได้ กฎราย field และรายการตรวจก่อนตอบ
+
+Template เริ่มต้น (revision 2) ออกแบบให้ตรงกับสิ่งที่โค้ดใช้จริง: Story คุมผลรวมเวลา ±10% ของ `targetDurationSec` และประเมินเวลาพูดต่อบรรทัด, Character ล็อกสไตล์และกำหนดโครง `visualConsistencyPrompt` สำหรับ Turnaround Sheet, Storyboard สั่งภาพเฟรมเดี่ยวโดยอ้าง "attached reference image #N" ตามลำดับที่แนบจริง และ Video ใช้แผนแบ่ง Segment ของแอป (`segmentPlanJson`) พร้อม continuity handoff ระหว่าง Segment
+
+หากเคยกด **บันทึก Settings** โดยไม่ได้แก้ Template แอปจะอัปเกรดข้อความที่ยังตรงกับ default รุ่นก่อนให้เป็นรุ่นล่าสุดอัตโนมัติตอนโหลด ส่วน Template ที่ผู้ใช้แก้เองจะไม่ถูกแตะ (ตรวจด้วย fingerprint ของข้อความเดิมใน `prompt-templates.js`)
 
 กด **ตัวแปรเหล่านี้มาจากไหน?** ใต้รายการตัวแปรเพื่อดู source path และความหมาย เช่น `project.brief`, `project.characters`, `shot.characters` หรือ `shot.storyboardImageRelativePath` ข้อมูลในตัวแปรเป็นข้อความ/JSON; ไฟล์ภาพ Character Sheet และ Storyboard ถูกแนบแยกผ่าน media API จริง
 
@@ -217,7 +223,7 @@ npm.cmd test
 node_modules\.bin\electron.cmd . --smoke-test
 ```
 
-ชุดทดสอบปัจจุบันนี้ 56 รายการ ครอบคลุม schema/normalization, Prompt Templates และ variable provenance, rendered Character/Story System + User exports, text-free Image/Video prompts, provider request shape, multipart Character references, image-to-video guard, Sora standard/strict safety framing และ moderation classification, silent generated-video post-processing, segment ≤ 8 วินาที, Character style lock, settings portability, atomic save, path traversal, packaged FFmpeg resolution, Thai female TTS/Character instructions, TTS force-regenerate/cache bypass, External Storyboard Prompt Package และ export, ZIP package export, และ Storyboard PDF export
+ชุดทดสอบปัจจุบันนี้ 61 รายการ ครอบคลุม schema/normalization, Prompt Templates และ variable provenance, การอัปเกรด Template default รุ่นเก่าอัตโนมัติ, context builders ของ Storyboard/Video prompt, rendered Character/Story System + User exports, text-free Image/Video prompts, provider request shape, multipart Character references, image-to-video guard, Sora standard/strict safety framing และ moderation classification, silent generated-video post-processing, segment ≤ 8 วินาที, Character style lock, settings portability, atomic save, path traversal, packaged FFmpeg resolution, Thai female TTS/Character instructions, TTS force-regenerate/cache bypass, External Storyboard Prompt Package และ export, ZIP package export, และ Storyboard PDF export
 
 Smoke test เปิด Renderer จริงและตรวจ Settings, Prompt Template Registry, Brief sync, Character-first UI, Story/Storyboard status, media routing และ video `contain` โดยผลสำเร็จจะแสดง `SMOKE_OK`
 

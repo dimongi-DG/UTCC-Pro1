@@ -13,6 +13,23 @@ test('mock story and segment generation is usable offline', () => {
   assert.ok(segments.every(x=>x.durationSec<=8&&x.videoPrompt.includes(`${x.durationSec}-second`)));
 });
 
+test('storyboard and video prompt contexts derive counts, labels and the segment plan from the shot', () => {
+  const { assignedCharacterContext }=require('../src/services/provider-registry');
+  const { storyboardPromptContext, videoPromptContext }=require('../src/shared/prompt-templates');
+  const project=createEmptyProject('Demo');project.brief.aspectRatio='16:9';
+  project.characters=[{id:'c1',name:'เมย์',sheetStyle:'3D Cartoon',referenceImages:[{id:'r1',relativePath:'characters/may.png',isPrimary:true}]},{id:'c2',name:'แม่',referenceImages:[]}];
+  const scene={sceneNumber:1,title:'Scene',mood:'tense'};const shot={shotNumber:2,plannedDurationSec:20,description:'เมย์รับสาย',characters:['c1'],camera:{movement:'Slow push-in'},storyboardImageRelativePath:'storyboard-images/a.png'};
+  const characters=assignedCharacterContext(project,shot);assert.equal(characters.length,1);assert.equal(characters[0].primaryReference,'characters/may.png');
+  const storyboard=storyboardPromptContext(project,scene,shot,characters,mock.buildShotPrompt(project,scene,shot));
+  assert.equal(storyboard.characterCount,'1');assert.equal(storyboard.shotLabel,'S01-SH02');assert.equal(storyboard.aspectRatio,'16:9');
+  assert.deepEqual(JSON.parse(storyboard.characterReferencesJson).map(x=>[x.order,x.characterId,x.attachedAsImageInput]),[[1,'c1',true]]);
+  const segments=mock.buildSegments(project,scene,shot);const video=videoPromptContext(project,scene,shot,characters,segments);
+  assert.equal(video.segmentCount,'3');assert.equal(video.shotDurationSec,'20');
+  assert.deepEqual(JSON.parse(video.segmentPlanJson).map(x=>x.durationSec),[8,8,4]);
+  assert.equal(JSON.parse(video.contextJson).requiredSegments.length,3);
+  assert.equal(JSON.parse(video.storyboardImageJson).relativePath,'storyboard-images/a.png');
+});
+
 test('video prompt generation requires a storyboard image for image-to-video', async () => {
   const { generateVideoSegments }=require('../src/services/provider-registry');
   await assert.rejects(generateVideoSegments(createEmptyProject('Demo'),{title:'Scene'},{plannedDurationSec:4,characters:[]}),error=>error.code==='storyboard_required');

@@ -54,17 +54,20 @@ Prompt templates are user-editable settings for `story`, `characters`, `storyboa
 
 When adding or changing a template:
 
-1. Define defaults and allowed variables in `src/shared/prompt-templates.js`.
-2. Define `variableGuide` source paths and meanings for every allowed variable so Settings can explain provenance.
-3. Keep output schemas explicit in the default User prompt.
-4. Validate empty text, maximum length, and unknown `{{variable}}` names before saving.
-5. Render only declared variables and raise a `configuration` error when a value is unavailable.
-6. Route System/User separately:
+1. Before changing any default System/User text, add the fingerprint of the OLD text to `LEGACY_TEMPLATE_FINGERPRINTS` (`templateFingerprint(text)`) and bump `PROMPT_TEMPLATE_REVISION`. Saved templates that still match an old default are upgraded automatically on load; customised text is never touched.
+2. Define defaults and allowed variables in `src/shared/prompt-templates.js`. Variable names must match `[A-Za-z][A-Za-z0-9]*`.
+3. Define `variableGuide` source paths and meanings for every allowed variable so Settings can explain provenance.
+4. Supply every declared variable from the matching context builder (`storyPromptContext`, `characterPromptContext`, `storyboardPromptContext`, `videoPromptContext`); `provider-registry.js` and `export-service.js` must not build prompt contexts inline.
+5. Keep output schemas explicit in the default User prompt and aligned with the parsers (`ai-normalize.js`, `provider-registry.js`). Do not ask the model for fields the app overrides (`durationSec`, `segmentNumber` order, `sheetStyle`, ids).
+6. Validate empty text, maximum length, and unknown `{{variable}}` names before saving.
+7. Render only declared variables and raise a `configuration` error when a value is unavailable.
+8. Route System/User separately:
    - OpenAI Responses: `instructions` and `input`.
    - OpenAI-compatible Chat: `messages` with `system` and `user` roles.
    - Gemini: `systemInstruction` and user `contents`.
-7. Keep templates in portable Settings export/import, but continue excluding API keys.
-8. Add or update tests in `tests/prompt-templates.test.js`, `tests/providers.test.js`, and `tests/settings-transfer.test.js`.
+9. Keep templates in portable Settings export/import, but continue excluding API keys.
+10. Keep the phrases the tests lock: `image-to-video` and `fictional consenting actors` in the video System prompt, `public-service awareness` in the video User prompt.
+11. Add or update tests in `tests/prompt-templates.test.js`, `tests/providers.test.js`, and `tests/settings-transfer.test.js`.
 
 Do not expose arbitrary JavaScript evaluation or file interpolation through template variables.
 

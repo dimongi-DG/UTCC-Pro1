@@ -4,7 +4,7 @@ const { classifyApiError } = require('../shared/api-errors');
 const { vendorFor, validateEndpoint } = require('../shared/vendors');
 const { id } = require('../shared/utils');
 const { normalizeGeneratedStory } = require('../shared/ai-normalize');
-const { normalizePromptTemplates, renderPromptTemplate, storyPromptContext, characterPromptContext } = require('../shared/prompt-templates');
+const { normalizePromptTemplates, renderPromptTemplate, storyPromptContext, characterPromptContext, storyboardPromptContext, videoPromptContext } = require('../shared/prompt-templates');
 const { enforceNoVisibleTextPrompt, enforceNoVisibleTextNegative } = require('../prompts/prompt-builder');
 
 function promptsFor(settings, key, context) {
@@ -127,17 +127,7 @@ async function generateShotPrompt(project, scene, shot) {
   const base = mock.buildShotPrompt(project, scene, shot);
   if (route.mock) return { ...base, promptGenerationMeta: { provider: 'mock', model: 'mock-visual-v1', generatedAt: new Date().toISOString() } };
   const assignedCharacters = assignedCharacterContext(project, shot);
-  const context = {
-    brief: project.brief, story: project.story,
-    characters: assignedCharacters,
-    scene: { title: scene.title, purpose: scene.purpose, location: scene.location, timeOfDay: scene.timeOfDay, settingDescription: scene.settingDescription, atmosphere: scene.atmosphere, mood: scene.mood, tone: scene.tone, narrativeBeat: scene.narrativeBeat, emotionalArc: scene.emotionalArc },
-    shot: { description: shot.description, purpose: shot.purpose, characters: shot.characters, dialogue: shot.dialogue, camera: shot.camera, action: shot.action, environment: shot.environment, lighting: shot.lighting },
-    deterministicDraft: base
-  };
-  const prompts = promptsFor(route.settings, 'storyboard', {
-    projectTitle: project.title || '', storyboardStyle: shot.storyboardStyle || project.brief?.storyboardStyle || 'Cinematic Color',
-    aspectRatio: project.brief?.aspectRatio || '9:16', characterReferencesJson: JSON.stringify(assignedCharacters.map((character, index) => ({ order: index + 1, characterId: character.id, name: character.name, style: character.referenceStyle, relativePath: character.primaryReference, attachedAsImageInput: Boolean(character.primaryReference) })), null, 2), contextJson: JSON.stringify(context, null, 2)
-  });
+  const prompts = promptsFor(route.settings, 'storyboard', storyboardPromptContext(project, scene, shot, assignedCharacters, base));
   const generated = await generateStructuredWithVendor(route.vendor, route.key, route.model, prompts.user, route.timeoutMs, route.reasoningEffort, prompts.system);
   const imagePrompt = String(generated?.imagePrompt || '').trim();
   if (!imagePrompt) throw Object.assign(new Error('AI did not return an imagePrompt'), { code: 'malformed_response' });
@@ -149,18 +139,7 @@ async function generateVideoSegments(project, scene, shot) {
   const route = await generationRoute('video');
   if (route.mock) return base.map(segment => ({ ...segment, generationMode: 'image-to-video', sourceStoryboardRelativePath: shot.storyboardImageRelativePath }));
   const assignedCharacters = assignedCharacterContext(project, shot);
-  const context = {
-    brief: project.brief,
-    characters: assignedCharacters,
-    scene: { title: scene.title, purpose: scene.purpose, location: scene.location, timeOfDay: scene.timeOfDay, atmosphere: scene.atmosphere, mood: scene.mood, tone: scene.tone },
-    shot: { description: shot.description, dialogue: shot.dialogue, camera: shot.camera, action: shot.action, environment: shot.environment, lighting: shot.lighting },
-    requiredSegments: base.map(segment => ({ segmentNumber: segment.segmentNumber, durationSec: segment.durationSec, startFrame: segment.startFrame, endFrame: segment.endFrame, actionBeat: segment.actionBeat }))
-  };
-  const prompts = promptsFor(route.settings, 'video', {
-    projectTitle: project.title || '', segmentCount: base.length, aspectRatio: project.brief?.aspectRatio || '9:16',
-    storyboardImageJson: JSON.stringify({ relativePath: shot.storyboardImageRelativePath, style: shot.storyboardStyle || project.brief?.storyboardStyle || '', generationMeta: shot.imageGenerationMeta || {}, attachedAsInputReference: true }, null, 2),
-    contextJson: JSON.stringify(context, null, 2)
-  });
+  const prompts = promptsFor(route.settings, 'video', videoPromptContext(project, scene, shot, assignedCharacters, base));
   const generated = await generateStructuredWithVendor(route.vendor, route.key, route.model, prompts.user, route.timeoutMs, route.reasoningEffort, prompts.system);
   const list = Array.isArray(generated) ? generated : generated?.segments;
   if (!Array.isArray(list) || !list.length) throw Object.assign(new Error('AI did not return video segments'), { code: 'malformed_response' });
